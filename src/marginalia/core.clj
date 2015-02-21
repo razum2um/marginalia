@@ -33,7 +33,8 @@
 ;;
 (ns marginalia.core
   (:require [clojure.java.io :as io]
-            [clojure.string  :as str])
+            [clojure.string  :as str]
+            [clojure.set :refer [intersection]])
   (:use [marginalia
          [html :only (uberdoc-html index-html single-page-html)]
          [parser :only (parse-file parse-ns)]]
@@ -52,7 +53,7 @@
    at a given directory.  If a path to a file is supplied, then the seq contains only the
    original path given."
   [path]
-  (let [file (java.io.File. path)]
+  (let [file (io/file path)]
     (if (.isDirectory file)
       (seq (.list file))
       (when (.exists file)
@@ -215,6 +216,20 @@
 
 (def ^:private file-extensions #{"clj" "cljs" "cljx"})
 
+(defn order-sources
+  "Takes a collection of file objects encapsulating source files in the project,
+  and a sequence of file objects representing the desired narrative order,
+  and returns an ordered sequence of strings of absolute paths of files in the project
+  to render in the uberdoc. Files from the desired order sequence that don't exist
+  in the project are ignored; files in the actual project that don't appear in the
+  narrative sequence are sorted alphabetically and appear at the end of the uberdoc."
+  [sources ordering]
+  (let [input-set (set sources)
+        order-set (set ordering)
+        common-set (intersection input-set order-set)]
+    (filter common-set ordering)))
+
+
 (defn format-sources
   "Given a collection of filepaths, returns a lazy sequence of filepaths to all
    .clj, .cljs, and .cljx files on those paths: directory paths will be searched
@@ -290,6 +305,8 @@
                                      :exclude (when exclude (.split exclude ";"))
                                      :leiningen leiningen}
                                     (:marginalia project-clj))
+              requested-ordering (map #(-> % io/file .getCanonicalPath) (:ordering marg-opts))
+              ordered-sources (order-sources sources requested-ordering)
               opts (merge-with choose
                                {:name name
                                 :version version
@@ -302,12 +319,12 @@
                            (filter #(not (source-excluded? % opts)))
                            (into []))]
           (println "Generating Marginalia documentation for the following source files:")
-          (doseq [s sources]
+          (doseq [s ordered-sources]
             (println "  " s))
           (println)
           (ensure-directory! *docs*)
           (if multi
             (multidoc! *docs* sources opts)
-            (uberdoc!  (str *docs* "/" file) sources opts))
+            (uberdoc!  (str *docs* "/" file) ordered-sources opts))
           (println "Done generating your documentation in" *docs*)
           (println ""))))))
