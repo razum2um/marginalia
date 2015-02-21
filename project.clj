@@ -1,4 +1,7 @@
-(defproject marginalia "0.8.1-SNAPSHOT"
+(defproject org.clojars.razum2um/marginalia "0.8.1-SNAPSHOT"
+  :url "http://github.com/razum2um/marginalia"
+  :license {:name "Eclipse Public License"
+            :url "http://www.eclipse.org/legal/epl-v10.html"}
   :description "lightweight literate programming for clojure -- inspired by [docco](http://jashkenas.github.com/docco/)"
 ;;  :main marginalia.main
   :dependencies
@@ -13,4 +16,5 @@
 
   ;;Needed for testing Latex equation formatting. You must download
   ;;and install MathJax in you doc directory.
-  :marginalia {:javascript ["mathjax/MathJax.js"]})
+  :marginalia {:javascript ["mathjax/MathJax.js"]
+               :ordering ["./src/marginalia/core.clj" "./src/marginalia/html.clj" "./src/marginalia/parser.clj" "./src/marginalia/main.clj" ]})
